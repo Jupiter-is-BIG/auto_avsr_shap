@@ -1,5 +1,6 @@
 import os
 
+import cv2
 import soundfile as sf
 import torch
 import torchvision
@@ -34,13 +35,35 @@ def cut_or_pad(data, size, dim=0):
     return data
 
 
+def _load_video_cv2(path):
+    """
+    Fallback video reader for torchvision releases that dropped
+    torchvision.io.read_video (video decoding moved to the separate
+    torchcodec library). Matches load_video's contract: T x C x H x W, RGB.
+    """
+    cap = cv2.VideoCapture(path)
+    frames = []
+    try:
+        while True:
+            ok, frame_bgr = cap.read()
+            if not ok:
+                break
+            frames.append(torch.from_numpy(frame_bgr[..., ::-1].copy()))
+    finally:
+        cap.release()
+    vid = torch.stack(frames)  # T x H x W x C, RGB, uint8
+    return vid.permute((0, 3, 1, 2))
+
+
 def load_video(path):
     """
     rtype: torch, T x C x H x W
     """
-    vid = torchvision.io.read_video(path, pts_unit="sec", output_format="THWC")[0]
-    vid = vid.permute((0, 3, 1, 2))
-    return vid
+    if hasattr(torchvision.io, "read_video"):
+        vid = torchvision.io.read_video(path, pts_unit="sec", output_format="THWC")[0]
+        vid = vid.permute((0, 3, 1, 2))
+        return vid
+    return _load_video_cv2(path)
 
 
 def load_audio(path):
