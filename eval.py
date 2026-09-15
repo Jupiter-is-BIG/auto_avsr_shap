@@ -18,7 +18,7 @@ def main(cfg):
         from lightning_av import ModelModule
     modelmodule = ModelModule(cfg)
     datamodule = DataModule(cfg)
-    trainer = Trainer(num_nodes=1, gpus=1)
+    trainer = Trainer(num_nodes=1, accelerator="gpu", devices=1)
     # Training and testing
     modelmodule.model.load_state_dict(torch.load(cfg.pretrained_model_path, map_location=lambda storage, loc: storage))
     trainer.test(model=modelmodule, datamodule=datamodule)
