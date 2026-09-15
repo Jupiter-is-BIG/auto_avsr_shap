@@ -12,6 +12,7 @@ import torch
 import torchaudio
 import torchvision
 
+from .av_dataset import load_wav
 from .video_distortion import FRAME_DISTORTION_TYPES, distortion_vid
 
 
@@ -74,7 +75,7 @@ class AddNoise(torch.nn.Module):
     ):
         super().__init__()
         self.snr_levels = [snr_target] if snr_target else [-5, 0, 5, 10, 15, 20, 999999]
-        self.noise, sample_rate = torchaudio.load(noise_filename)
+        self.noise, sample_rate = load_wav(noise_filename)
         assert sample_rate == 16000
 
     def forward(self, speech):

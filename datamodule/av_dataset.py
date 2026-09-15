@@ -1,8 +1,23 @@
 import os
 
+import soundfile as sf
 import torch
-import torchaudio
 import torchvision
+
+
+def load_wav(path):
+    """
+    torchaudio.load()-compatible WAV reader: returns (waveform, sample_rate)
+    with waveform shape (channels, num_samples), float32, normalized to
+    [-1, 1] -- matching torchaudio.load(path, normalize=True)'s contract.
+    Implemented via soundfile instead of torchaudio's torchcodec-based
+    backend, since this environment's torch (2.14.0) / torchaudio (2.11.0)
+    aren't from the same release train and torchcodec isn't installed;
+    soundfile has no such dependency.
+    """
+    data, sample_rate = sf.read(path, dtype="float32", always_2d=True)  # (T, C)
+    waveform = torch.from_numpy(data.T).contiguous()  # (C, T)
+    return waveform, sample_rate
 
 
 def cut_or_pad(data, size, dim=0):
@@ -32,7 +47,7 @@ def load_audio(path):
     """
     rtype: torch, T x 1
     """
-    waveform, sample_rate = torchaudio.load(path[:-4] + ".wav", normalize=True)
+    waveform, sample_rate = load_wav(path[:-4] + ".wav")
     return waveform.transpose(1, 0)
 
 
