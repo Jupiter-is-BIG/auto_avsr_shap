@@ -12,6 +12,8 @@ import torch
 import torchaudio
 import torchvision
 
+from .video_distortion import FRAME_DISTORTION_TYPES, distortion_vid
+
 
 NOISE_FILENAME = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "babble_noise.wav"
@@ -86,8 +88,29 @@ class AddNoise(torch.nn.Module):
         return noisy_speech.t()
 
 
+class VideoDistortion(torch.nn.Module):
+    """
+    Fixed-type/fixed-severity visual corruption, for eval-time robustness
+    sweeps (mirrors decode.snr_target's role for audio). Level 0 means "no
+    distortion" (clean passthrough).
+    """
+    def __init__(self, dist_type, dist_level=3):
+        super().__init__()
+        assert dist_type in FRAME_DISTORTION_TYPES + ["random"], (
+            f"dist_type must be one of {FRAME_DISTORTION_TYPES + ['random']}, got {dist_type!r}."
+        )
+        self.dist_type = dist_type
+        self.dist_level = dist_level
+
+    def forward(self, video):
+        # video: T x C x H x W, RGB, pre-normalization (0-255 range).
+        if self.dist_level == 0:
+            return video
+        return distortion_vid(video, dist_type=self.dist_type, dist_level=self.dist_level)
+
+
 class VideoTransform:
-    def __init__(self, subset):
+    def __init__(self, subset, dist_type=None, dist_level=3):
         if subset == "train":
             self.video_pipeline = torch.nn.Sequential(
                 FunctionalModule(lambda x: x / 255.0),
@@ -97,7 +120,13 @@ class VideoTransform:
                 torchvision.transforms.Normalize(0.421, 0.165),
             )
         elif subset == "val" or subset == "test":
+            distortion = (
+                [VideoDistortion(dist_type, dist_level)]
+                if dist_type not in (None, "none") and dist_level != 0
+                else []
+            )
             self.video_pipeline = torch.nn.Sequential(
+                *distortion,
                 FunctionalModule(lambda x: x / 255.0),
                 torchvision.transforms.CenterCrop(88),
                 torchvision.transforms.Grayscale(),

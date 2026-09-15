@@ -5,3 +5,5 @@ shap_alg:
 wand_project:
 num_samples_shap: 2000
 snr_target: 999999
+vid_dist_type: none  # [none, CC, BW, GNC, GB, JPEG, random]
+vid_dist_level: 3    # 0 = clean, 1 (mildest) - 5 (most severe)

@@ -353,10 +353,6 @@ class ModelModule(LightningModule):
                 # Aggregated metrics
                 audio_abs=np.array(self.audio_shap_abs),
                 video_abs=np.array(self.video_shap_abs),
-                audio_pos=np.array(self.audio_shap_pos),
-                video_pos=np.array(self.video_shap_pos),
-                audio_neg=np.array(self.audio_shap_neg),
-                video_neg=np.array(self.video_shap_neg),
                 num_audio_tokens=np.array(self.num_audio_tokens),
                 # Raw SHAP values (ragged array - stored as object array)
                 shap_values=np.array(self.shapley_values, dtype=object),

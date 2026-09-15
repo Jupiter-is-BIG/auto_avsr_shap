@@ -103,13 +103,17 @@ class DataModule(LightningDataModule):
         ds_args = self.cfg.data.dataset
         dataset = AVDataset(
             root_dir=ds_args.root_dir,
-            label_path=os.path.join(ds_args.root_dir, ds_args.label_dir, ds_args.test_file),
+            label_path=os.path.join("/aa4825/data/labels", ds_args.test_file),
             subset="test",
             modality=self.cfg.data.modality,
             audio_transform=AudioTransform(
                 "test", snr_target=self.cfg.decode.snr_target
             ),
-            video_transform=VideoTransform("test"),
+            video_transform=VideoTransform(
+                "test",
+                dist_type=getattr(self.cfg.decode, "vid_dist_type", None),
+                dist_level=getattr(self.cfg.decode, "vid_dist_level", 3),
+            ),
         )
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
         return dataloader
